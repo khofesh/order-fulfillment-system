@@ -1,0 +1,183 @@
+{
+  "Comment": "Order fulfillment: call supplier, wait for its callback (polling as fallback, capped), retry with backoff, park on open circuit, DLQ + notify on failure.",
+  "StartAt": "Init",
+  "TimeoutSeconds": 3600,
+  "States": {
+    "Init": {
+      "Comment": "Poll settings come from Terraform as strings (keeps this file valid JSON) and are parsed to numbers here.",
+      "Type": "Pass",
+      "Parameters": {
+        "count": 0,
+        "max.$": "States.StringToJson('${max_polls}')",
+        "intervalSeconds.$": "States.StringToJson('${poll_interval_seconds}')"
+      },
+      "ResultPath": "$.poll",
+      "Next": "CallSupplier"
+    },
+    "CallSupplier": {
+      "Type": "Task",
+      "Resource": "${supplier_adapter_arn}",
+      "Parameters": {
+        "action": "FULFILL",
+        "orderId.$": "$.orderId"
+      },
+      "ResultPath": "$.fulfillment",
+      "Retry": [
+        {
+          "ErrorEquals": ["SupplierRetryableError", "Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["SupplierUnavailableError"], "ResultPath": "$.error", "Next": "ParkForRetry" },
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "SendToDLQ" }
+      ],
+      "Next": "FulfillmentResult"
+    },
+    "FulfillmentResult": {
+      "Type": "Choice",
+      "Choices": [
+        { "Variable": "$.fulfillment.status", "StringEquals": "DELIVERED", "Next": "MarkDelivered" },
+        { "Variable": "$.fulfillment.status", "StringEquals": "PENDING", "Next": "PollLimitReached" }
+      ],
+      "Default": "SupplierRejected"
+    },
+    "PollLimitReached": {
+      "Type": "Choice",
+      "Choices": [
+        { "Variable": "$.poll.count", "NumericGreaterThanEqualsPath": "$.poll.max", "Next": "PollLimitError" }
+      ],
+      "Default": "WaitForCallback"
+    },
+    "WaitForCallback": {
+      "Comment": "Stores the task token for supplier-callback (SendTaskSuccess). If no callback arrives within the poll interval, fall back to a status check.",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${supplier_adapter_arn}",
+        "Payload": {
+          "action": "AWAIT_CALLBACK",
+          "orderId.$": "$.orderId",
+          "supplierOrderId.$": "$.fulfillment.supplierOrderId",
+          "taskToken.$": "$$.Task.Token"
+        }
+      },
+      "TimeoutSecondsPath": "$.poll.intervalSeconds",
+      "ResultPath": "$.fulfillment",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.Timeout"], "ResultPath": "$.lastWait", "Next": "CountPoll" },
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "SendToDLQ" }
+      ],
+      "Next": "FulfillmentResult"
+    },
+    "CountPoll": {
+      "Type": "Pass",
+      "Parameters": {
+        "count.$": "States.MathAdd($.poll.count, 1)",
+        "max.$": "$.poll.max",
+        "intervalSeconds.$": "$.poll.intervalSeconds"
+      },
+      "ResultPath": "$.poll",
+      "Next": "CheckSupplierStatus"
+    },
+    "CheckSupplierStatus": {
+      "Type": "Task",
+      "Resource": "${supplier_adapter_arn}",
+      "Parameters": {
+        "action": "CHECK_STATUS",
+        "orderId.$": "$.orderId",
+        "supplierOrderId.$": "$.fulfillment.supplierOrderId"
+      },
+      "ResultPath": "$.fulfillment",
+      "Retry": [
+        {
+          "ErrorEquals": ["SupplierRetryableError", "Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["SupplierUnavailableError"], "ResultPath": "$.error", "Next": "ParkForRetry" },
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "SendToDLQ" }
+      ],
+      "Next": "FulfillmentResult"
+    },
+    "PollLimitError": {
+      "Type": "Pass",
+      "Result": { "Error": "PollLimitReached", "Cause": "Supplier still PENDING after the maximum number of status checks" },
+      "ResultPath": "$.error",
+      "Next": "ParkForRetry"
+    },
+    "ParkForRetry": {
+      "Comment": "Supplier unavailable or slow: park the order. The health check restarts it (same idempotency key) once the supplier is active.",
+      "Type": "Task",
+      "Resource": "${update_order_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "status": "PENDING_RETRY",
+        "error.$": "$.error"
+      },
+      "ResultPath": null,
+      "Next": "FulfillmentParked"
+    },
+    "FulfillmentParked": {
+      "Type": "Succeed"
+    },
+    "SupplierRejected": {
+      "Type": "Pass",
+      "Result": { "Error": "SupplierRejected", "Cause": "Supplier reported the order as FAILED" },
+      "ResultPath": "$.error",
+      "Next": "SendToDLQ"
+    },
+    "SendToDLQ": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${dlq_url}",
+        "MessageBody.$": "$"
+      },
+      "ResultPath": null,
+      "Next": "MarkFailed"
+    },
+    "MarkFailed": {
+      "Type": "Task",
+      "Resource": "${update_order_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "status": "FAILED",
+        "error.$": "$.error"
+      },
+      "ResultPath": null,
+      "Next": "FulfillmentFailed"
+    },
+    "FulfillmentFailed": {
+      "Type": "Fail",
+      "Error": "FulfillmentFailed"
+    },
+    "MarkDelivered": {
+      "Type": "Task",
+      "Resource": "${update_order_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "status": "DELIVERED",
+        "fulfillment.$": "$.fulfillment"
+      },
+      "ResultPath": null,
+      "Next": "FulfillmentSucceeded"
+    },
+    "FulfillmentSucceeded": {
+      "Type": "Succeed"
+    }
+  }
+}
