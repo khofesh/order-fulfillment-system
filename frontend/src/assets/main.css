@@ -1,35 +1,212 @@
-@import './base.css';
+:root {
+  --bg: #f6f7f9;
+  --surface: #fff;
+  --text: #1f2933;
+  --muted: #616e7c;
+  --border: #d9dee3;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --danger: #c0262d;
+  --radius: 6px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+nav a:hover,
+nav a.router-link-exact-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+main {
+  max-width: 1100px;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem;
+}
+
+section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+h3 {
+  margin-top: 1.5rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Forms */
+form label,
+section > label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+form label input,
+form label select,
+section > label select {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 0.25rem;
   font-weight: normal;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+input,
+select {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+input:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--bg);
+}
+
+tbody tr:hover {
+  background: var(--bg);
+}
+
+/* Order detail */
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1.5rem;
+  margin: 0 0 1rem;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+/* Status badges */
+.status {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #e4e7eb;
+  color: #3e4c59;
+}
+
+.status-PROCESSING {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-PENDING_RETRY {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-DELIVERED {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-FAILED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.error {
+  color: var(--danger);
 }
