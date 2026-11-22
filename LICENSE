@@ -1,0 +1,54 @@
+Evaluation-Only License
+
+Copyright (c) 2026 Fahmi Ahmad. All rights reserved.
+
+This license covers the source code, documentation, infrastructure definitions and all other
+files in this repository (the "Software").
+
+1. Licensee
+
+   This license is granted only to Gamer2Gamer (G2G), including its employees and contractors
+   acting on its behalf (the "Licensee"), and only for the purpose stated in section 2. No
+   other person or entity receives any rights under this license.
+
+2. Permitted use
+
+   The Licensee may view, download, copy, build, run and test the Software solely to review
+   and evaluate it as part of a recruitment or technical assessment process (the "Review").
+
+3. Restrictions
+
+   The Licensee may not, without the prior written permission of the copyright holder:
+
+   a. use the Software, or any part of it, for any commercial purpose, including in any
+      product, service, internal production system or client work;
+   b. deploy the Software to a production environment or use it to process real customer
+      orders, payments or data;
+   c. modify, adapt or create derivative works of the Software, except temporary changes made
+      only to run or evaluate it during the Review;
+   d. distribute, publish, sublicense, sell, rent or otherwise make the Software available to
+      any third party;
+   e. use the Software, or any part of it, to train machine learning models.
+
+4. Term
+
+   This license ends when the Review is complete, or earlier if the copyright holder revokes it
+   in writing, or automatically if the Licensee breaches any of its terms. When it ends, the
+   Licensee must delete all copies of the Software in its possession, except copies it is
+   required by law to keep, which remain subject to this license.
+
+5. Ownership
+
+   The Software is licensed, not sold. The copyright holder keeps all rights, title and
+   interest in the Software. No rights are granted except those expressly stated here.
+
+6. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+For any use beyond the Review, contact the copyright holder for written permission.
